@@ -19,6 +19,10 @@ import {
     FormControl,
     FormMessage,
 } from "./ui/form";
+import { registerUser } from "@/lib/api";
+import { useNavigate } from "react-router-dom";
+import { CircleCheck } from "lucide-react";
+import { Alert, AlertTitle, AlertDescription } from "./ui/alert";
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5 MB
 const ACCEPTED_IMAGE_TYPES = ["image/jpeg", "image/png", "image/gif"];
@@ -58,8 +62,11 @@ export default function RegisterForm() {
             file: "",
         },
     });
+    let navigate = useNavigate();
+    const [loading, setLoading] = useState(false);
 
     const [imageLink, setImageLink] = useState("");
+    const [error, setError] = useState("");
 
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
@@ -74,8 +81,27 @@ export default function RegisterForm() {
         document.getElementById("fileUpload")?.click();
     };
 
-    function onSubmit(values: z.infer<typeof formSchema>) {
-        console.log(values);
+    async function onSubmit(values: z.infer<typeof formSchema>) {
+        setLoading(true);
+        const formData = new FormData();
+        formData.append("name", values.name);
+        formData.append("email", values.email);
+        formData.append("password", values.password);
+        if (values.file) {
+            formData.append("file", values.file);
+        }
+        try {
+            await registerUser(formData);
+            setLoading(false);
+            navigate("/");
+        } catch (error: any) {
+            setLoading(false);
+            setError(error.message);
+        } finally {
+            setTimeout(() => {
+                setError("");
+            }, 2000);
+        }
     }
 
     return (
@@ -95,6 +121,15 @@ export default function RegisterForm() {
                             onSubmit={form.handleSubmit(onSubmit)}
                             className="space-y-4"
                         >
+                            {error !== "" && (
+                                <Alert variant={"destructive"} className="mb-4">
+                                    <CircleCheck className="h-4 w-4" />
+
+                                    <AlertTitle>Error</AlertTitle>
+                                    <AlertDescription>{error}</AlertDescription>
+                                </Alert>
+                            )}
+
                             <div className="space-y-2">
                                 <FormField
                                     control={form.control}
@@ -195,8 +230,12 @@ export default function RegisterForm() {
                                     )}
                                 />
                             </div>
-                            <Button type="submit" className="w-full mt-5">
-                                Register
+                            <Button
+                                type="submit"
+                                className="w-full mt-5"
+                                disabled={loading}
+                            >
+                                {loading ? "Please Wait..." : "Register"}
                             </Button>
                         </form>
                     </FormProvider>

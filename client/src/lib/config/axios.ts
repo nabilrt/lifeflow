@@ -14,7 +14,6 @@ instance.interceptors.request.use(
 
         return config;
     },
-
     (err) => {
         return Promise.reject(err);
     }
@@ -31,14 +30,26 @@ instance.interceptors.response.use(
         if (error.response) {
             console.error("Error Status Code:", error.response.status);
 
+            // Check for specific status codes and handle them
             if (error.response.status === 401) {
                 localStorage.removeItem("token");
                 localStorage.removeItem("user");
                 window.location.href = "/";
             }
+
+            // Attach the API error message if available
+            const apiErrorMessage =
+                error.response.data?.error || error.response.data?.message;
+            error.message = apiErrorMessage || error.message;
+        } else if (error.request) {
+            // Request was made but no response received
+            error.message = "No response received from the server.";
+        } else {
+            // Something happened in setting up the request
+            error.message = error.message || "An unexpected error occurred.";
         }
 
-        return Promise.reject(error);
+        return Promise.reject(error); // Pass the enhanced error object
     }
 );
 

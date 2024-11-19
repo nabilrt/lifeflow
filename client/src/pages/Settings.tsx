@@ -12,7 +12,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useTheme } from "@/lib/context/theme-context";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Form, FormProvider, useForm } from "react-hook-form";
+import { FormProvider, useForm } from "react-hook-form";
 import { Button } from "@/components/ui/button";
 import {
     FormField,
@@ -22,6 +22,10 @@ import {
     FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+
+import { updateUserPassword } from "@/lib/api";
+import { CircleAlertIcon, CircleCheck } from "lucide-react";
 
 const passwordSchema = z
     .object({
@@ -39,6 +43,11 @@ type PasswordFormValues = z.infer<typeof passwordSchema>;
 export default function Settings() {
     const { theme, setTheme } = useTheme();
     const [isLoading, setIsLoading] = useState(false);
+    const [apiLoading, setAPILoading] = useState(false);
+    const [alert, setAlert] = useState<{
+        type: "success" | "error";
+        message: string;
+    } | null>(null);
 
     const form = useForm<PasswordFormValues>({
         resolver: zodResolver(passwordSchema),
@@ -48,10 +57,24 @@ export default function Settings() {
         },
     });
 
-    const onSubmit = (data: PasswordFormValues) => {
-        console.log("Password changed:", data.newPassword);
-        // Here you would typically send this to your backend
-        form.reset();
+    const onSubmit = async (data: PasswordFormValues) => {
+        try {
+            setAPILoading(true);
+            const response = await updateUserPassword({
+                newPassword: data.newPassword,
+            });
+            setAlert({ type: "success", message: response.data.message });
+            form.reset();
+        } catch (error: any) {
+            console.log(error);
+            setAlert({ type: "error", message: error.message });
+            form.reset();
+        } finally {
+            setAPILoading(false);
+            setTimeout(() => {
+                setAlert(null);
+            }, 2000);
+        }
     };
 
     const toggleTheme = (newTheme: "light" | "dark") => {
@@ -78,6 +101,30 @@ export default function Settings() {
                         <h3 className="text-lg font-medium mb-2">
                             Change Password
                         </h3>
+                        {alert && (
+                            <Alert
+                                variant={
+                                    alert.type === "success"
+                                        ? "default"
+                                        : "destructive"
+                                }
+                                className="mb-4"
+                            >
+                                {alert.type === "success" ? (
+                                    <CircleAlertIcon className="h-4 w-4" />
+                                ) : (
+                                    <CircleCheck className="h-4 w-4" />
+                                )}
+                                <AlertTitle>
+                                    {alert.type === "success"
+                                        ? "Success"
+                                        : "Error"}
+                                </AlertTitle>
+                                <AlertDescription>
+                                    {alert.message}
+                                </AlertDescription>
+                            </Alert>
+                        )}
 
                         <FormProvider {...form}>
                             <form
@@ -118,7 +165,11 @@ export default function Settings() {
                                         </FormItem>
                                     )}
                                 />
-                                <Button type="submit">Change Password</Button>
+                                <Button type="submit" disabled={apiLoading}>
+                                    {apiLoading
+                                        ? "Updating..."
+                                        : "Change Password"}
+                                </Button>
                             </form>
                         </FormProvider>
                     </div>

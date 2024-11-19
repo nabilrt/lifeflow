@@ -45,7 +45,8 @@ import {
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 import LoadingSkeleton from "@/components/LoadingSkeleton";
-import { CustomCalendarComponent } from "@/components/custom-calendar";
+import CustomCalendar from "@/components/custom-calendar";
+import NoContent from "@/components/NoContent";
 
 // Define types for API response
 type ExpenseBreakdown = {
@@ -100,6 +101,7 @@ const Dashboard = () => {
         TransactionData[] | null
     >(null);
     const [loading, setLoading] = useState<boolean>(true);
+    const [isUpdated, setIsUpdated] = useState<boolean>(false);
 
     useEffect(() => {
         async function fetchAnalytics() {
@@ -115,13 +117,25 @@ const Dashboard = () => {
             }
         }
         fetchAnalytics();
-    }, []);
+    }, [isUpdated]);
     if (loading) {
         return <LoadingSkeleton />;
     }
 
     if (!analyticsData) {
-        return <div>Failed to load data</div>;
+        return (
+            <NoContent>
+                <div>
+                    <h1 className="text-[1.4rem] mt-6 font-[500] text-black">
+                        Currently You Have No Analytics
+                    </h1>
+
+                    <p className="text-[0.9rem] text-gray-500">
+                        Create Something to see analytics
+                    </p>
+                </div>
+            </NoContent>
+        );
     }
 
     const {
@@ -326,7 +340,7 @@ const Dashboard = () => {
                             <div className="grid gap-2">
                                 <CardTitle>Transactions</CardTitle>
                                 <CardDescription>
-                                    Recent transactions from your store.
+                                    Recent transactions of yours.
                                 </CardDescription>
                             </div>
                             <Button asChild size="sm" className="ml-auto gap-1">
@@ -436,7 +450,10 @@ const Dashboard = () => {
                                 </div>
                             </CardHeader>
                             <CardContent>
-                                <CustomCalendarComponent />
+                                <CustomCalendar
+                                    setIsUpdated={setIsUpdated}
+                                    isUpdated={isUpdated}
+                                />
                             </CardContent>
                         </Card>
                     </div>

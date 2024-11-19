@@ -1,4 +1,6 @@
-import { useState, useMemo } from "react";
+"use client";
+
+import { useState, useEffect, useMemo } from "react";
 import { Calendar } from "@/components/ui/calendar";
 import {
     Dialog,
@@ -9,7 +11,17 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { useForm } from "react-hook-form";
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
+import { useForm, Controller } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import * as z from "zod";
 import {
     Tooltip,
     TooltipContent,
@@ -17,51 +29,221 @@ import {
     TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { toast } from "@/hooks/use-toast";
+import axios from "../lib/config/axios";
+import {
+    Table,
+    TableBody,
+    TableCell,
+    TableHead,
+    TableHeader,
+    TableRow,
+} from "@/components/ui/table";
+import { useTheme } from "@/lib/context/theme-context";
+import {
+    createTask,
+    deleteTask,
+    getAllTasks,
+    updateTaskData,
+    updateTaskPriority,
+    updateTaskStatus,
+} from "@/lib/api";
+
+const taskSchema = z.object({
+    name: z.string().min(1, "Name is required"),
+    description: z.string().optional(),
+    priority: z.enum(["low", "medium", "high"], {
+        required_error: "Please select a priority",
+    }),
+    isCompleted: z.boolean().optional(),
+});
+
+type TaskFormData = z.infer<typeof taskSchema>;
 
 type Task = {
-    date: Date;
-    title: string;
+    id: number;
+    name: string;
     description: string;
-    priority: string;
+    priority: "low" | "medium" | "high";
+    isCompleted: boolean;
+    userId: number;
+    createdAt: string;
 };
 
-export function CustomCalendarComponent() {
+export default function CustomCalendar({ setIsUpdated, isUpdated }: any) {
     const [selectedDate, setSelectedDate] = useState<Date | undefined>(
         new Date()
     );
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [tasks, setTasks] = useState<Task[]>([]);
+    const [editingTask, setEditingTask] = useState<Task | null>(null);
+    const { theme } = useTheme();
 
-    const { register, handleSubmit, reset } = useForm<Task>();
+    const {
+        register,
+        handleSubmit,
+        control,
+        reset,
+        setValue,
+        formState: { errors },
+    } = useForm<TaskFormData>({
+        resolver: zodResolver(taskSchema),
+        defaultValues: {
+            name: "",
+            description: "",
+            priority: "medium",
+        },
+    });
 
-    const onSubmit = (data: Task) => {
-        if (!selectedDate) {
+    useEffect(() => {
+        fetchTasks();
+    }, []);
+
+    const fetchTasks = async () => {
+        try {
+            const fetchedTasks = await getAllTasks();
+            setTasks(fetchedTasks);
+        } catch (error) {
             toast({
                 title: "Error",
-                description: "Please select a date before adding a task.",
+                description: "Failed to fetch tasks",
                 variant: "destructive",
             });
-            return;
         }
-        setTasks([...tasks, { ...data, date: selectedDate }]);
-        setIsDialogOpen(false);
-        reset();
-        toast({
-            title: "Task added",
-            description: `Task "${
-                data.title
-            }" added for ${selectedDate.toDateString()}`,
-        });
+    };
+
+    const onSubmit = async (data: TaskFormData) => {
+        try {
+            if (editingTask) {
+                const updatedTask = await updateTaskData(editingTask.id, data);
+                setTasks(
+                    tasks.map((task) =>
+                        task.id === updatedTask.id ? updatedTask : task
+                    )
+                );
+            } else {
+                const newTask = await createTask(data);
+                setTasks([...tasks, newTask]);
+            }
+            setIsDialogOpen(false);
+            reset();
+            setEditingTask(null);
+            setIsUpdated(!isUpdated);
+            toast({
+                title: editingTask ? "Task updated" : "Task created",
+                description: `Task "${data.name}" ${
+                    editingTask ? "updated" : "created"
+                } successfully`,
+            });
+        } catch (error) {
+            toast({
+                title: "Error",
+                description: `Failed to ${
+                    editingTask ? "update" : "create"
+                } task`,
+                variant: "destructive",
+            });
+        }
     };
 
     const handleDateClick = (date: Date | undefined) => {
         setSelectedDate(date);
         setIsDialogOpen(true);
+        setEditingTask(null);
+        reset();
+    };
+
+    const handleEditTask = (task: Task) => {
+        setEditingTask(task);
+        setValue("name", task.name);
+        setValue("description", task.description);
+        setValue("priority", task.priority);
+        setIsDialogOpen(true);
+    };
+
+    const handleUpdatePriority = async (
+        taskId: number,
+        newPriority: "low" | "medium" | "high"
+    ) => {
+        try {
+            const updatedTask = await updateTaskPriority(taskId, {
+                priority: newPriority,
+            });
+            setTasks(
+                tasks.map((task) =>
+                    task.id === updatedTask.id ? updatedTask : task
+                )
+            );
+            setIsUpdated(!isUpdated);
+            toast({
+                title: "Priority updated",
+                description: `Task priority updated successfully`,
+            });
+        } catch (error) {
+            toast({
+                title: "Error",
+                description: "Failed to update task priority",
+                variant: "destructive",
+            });
+        }
+    };
+
+    const handleDeleteTask = async (taskId: number) => {
+        try {
+            // Optimistically update UI
+
+            // Attempt to delete from server
+            await deleteTask(taskId);
+            setTasks((prevTasks) =>
+                prevTasks.filter((task) => task.id !== taskId)
+            );
+            setIsUpdated(!isUpdated);
+
+            toast({
+                title: "Task deleted",
+                description: "Task has been successfully deleted",
+            });
+        } catch (error) {
+            console.error("Error deleting task:", error);
+            toast({
+                title: "Error",
+                description: "Failed to delete task. Please try again.",
+                variant: "destructive",
+            });
+        }
+    };
+
+    const handleToggleComplete = async (
+        taskId: number,
+        isCompleted: true | false
+    ) => {
+        try {
+            const updatedTask = await updateTaskStatus(taskId, {
+                isCompleted,
+            });
+            setTasks(
+                tasks.map((task) =>
+                    task.id === updatedTask.id ? updatedTask : task
+                )
+            );
+            setIsUpdated(!isUpdated);
+            toast({
+                title: "Task status updated",
+                description: `Task marked as ${
+                    isCompleted ? "completed" : "incomplete"
+                }`,
+            });
+        } catch (error) {
+            toast({
+                title: "Error",
+                description: "Failed to update task status",
+                variant: "destructive",
+            });
+        }
     };
 
     const taskDates = useMemo(() => {
         return tasks.reduce((acc, task) => {
-            const dateString = task.date.toDateString();
+            const dateString = new Date(task.createdAt).toDateString();
             if (!acc[dateString]) {
                 acc[dateString] = [];
             }
@@ -78,22 +260,32 @@ export function CustomCalendarComponent() {
 
     const modifiersStyles = {
         taskDay: {
-            backgroundColor: "rgba(59, 130, 246, 0.1)",
+            backgroundColor:
+                theme === "dark"
+                    ? "rgba(59, 130, 246, 0.2)"
+                    : "rgba(59, 130, 246, 0.1)",
             borderRadius: "100%",
         },
     };
 
     return (
-        <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                <div className="lg:col-span-2">
+        <div className="p-4 bg-background text-foreground">
+            <div className="flex space-x-4">
+                <div className="w-1/3">
                     <TooltipProvider>
                         <Calendar
                             mode="single"
                             selected={selectedDate}
                             onSelect={handleDateClick}
-                            className="rounded-md border w-full"
+                            className="rounded-md border border-border"
                             modifiers={modifiers}
+                            classNames={{
+                                months: "flex w-full flex-col sm:flex-row space-y-4 sm:space-x-4 sm:space-y-0 flex-1",
+                                month: "space-y-4 w-full flex flex-col",
+                                table: "w-full h-full border-collapse space-y-1",
+                                head_row: "",
+                                row: "w-full mt-2",
+                            }}
                             modifiersStyles={modifiersStyles}
                             components={{
                                 DayContent: ({ date }) => {
@@ -110,9 +302,17 @@ export function CustomCalendarComponent() {
                                                 <TooltipContent>
                                                     <ul className="list-disc pl-4">
                                                         {tasksForDay.map(
-                                                            (task, index) => (
-                                                                <li key={index}>
-                                                                    {task.title}
+                                                            (task) => (
+                                                                <li
+                                                                    key={
+                                                                        task.id
+                                                                    }
+                                                                >
+                                                                    {task.name}{" "}
+                                                                    -{" "}
+                                                                    {
+                                                                        task.priority
+                                                                    }
                                                                 </li>
                                                             )
                                                         )}
@@ -126,25 +326,94 @@ export function CustomCalendarComponent() {
                         />
                     </TooltipProvider>
                 </div>
-                <div>
-                    <h2 className="text-xl font-bold mb-4">All Tasks</h2>
-                    <ul className="space-y-2">
-                        {tasks.map((task, index) => (
-                            <li key={index} className="bg-gray-100 p-2 rounded">
-                                <strong>{task.date.toDateString()}:</strong>{" "}
-                                {task.title} - {task.description}
-                            </li>
-                        ))}
-                    </ul>
+                <div className="w-2/3">
+                    <Table>
+                        <TableHeader>
+                            <TableRow>
+                                <TableHead className="w-[50px]">Done</TableHead>
+                                <TableHead>Name</TableHead>
+                                <TableHead>Description</TableHead>
+                                <TableHead>Priority</TableHead>
+                                <TableHead>Actions</TableHead>
+                            </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                            {tasks.map((task) => (
+                                <TableRow key={task.id}>
+                                    <TableCell>
+                                        <Checkbox
+                                            checked={task.isCompleted}
+                                            onCheckedChange={(checked: any) =>
+                                                handleToggleComplete(
+                                                    task.id,
+                                                    checked as boolean
+                                                )
+                                            }
+                                        />
+                                    </TableCell>
+                                    <TableCell>{task.name}</TableCell>
+                                    <TableCell>{task.description}</TableCell>
+                                    <TableCell>
+                                        <Select
+                                            value={task.priority}
+                                            onValueChange={(
+                                                value: "low" | "medium" | "high"
+                                            ) =>
+                                                handleUpdatePriority(
+                                                    task.id,
+                                                    value
+                                                )
+                                            }
+                                        >
+                                            <SelectTrigger className="w-[100px]">
+                                                <SelectValue placeholder="Select priority" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="low">
+                                                    Low
+                                                </SelectItem>
+                                                <SelectItem value="medium">
+                                                    Medium
+                                                </SelectItem>
+                                                <SelectItem value="high">
+                                                    High
+                                                </SelectItem>
+                                            </SelectContent>
+                                        </Select>
+                                    </TableCell>
+                                    <TableCell>
+                                        <div className="flex space-x-2">
+                                            <Button
+                                                variant="outline"
+                                                onClick={() =>
+                                                    handleEditTask(task)
+                                                }
+                                            >
+                                                Edit
+                                            </Button>
+                                            <Button
+                                                variant="destructive"
+                                                onClick={() =>
+                                                    handleDeleteTask(task.id)
+                                                }
+                                            >
+                                                Delete
+                                            </Button>
+                                        </div>
+                                    </TableCell>
+                                </TableRow>
+                            ))}
+                        </TableBody>
+                    </Table>
                 </div>
             </div>
 
             <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-                <DialogContent className="sm:max-w-[425px]">
+                <DialogContent className="sm:max-w-[425px] bg-background text-foreground">
                     <DialogHeader>
                         <DialogTitle>
-                            Create a task for{" "}
-                            {selectedDate?.toDateString() || "Selected Date"}
+                            {editingTask ? "Edit Task" : "Create a task"} for{" "}
+                            {selectedDate?.toDateString()}
                         </DialogTitle>
                     </DialogHeader>
                     <form
@@ -152,20 +421,64 @@ export function CustomCalendarComponent() {
                         className="space-y-4"
                     >
                         <div>
-                            <Label htmlFor="title">Title</Label>
+                            <Label htmlFor="name">Name</Label>
                             <Input
-                                id="title"
-                                {...register("title", { required: true })}
+                                id="name"
+                                {...register("name")}
+                                className="bg-background text-foreground"
                             />
+                            {errors.name && (
+                                <p className="text-sm text-destructive">
+                                    {errors.name.message}
+                                </p>
+                            )}
                         </div>
                         <div>
                             <Label htmlFor="description">Description</Label>
                             <Input
                                 id="description"
                                 {...register("description")}
+                                className="bg-background text-foreground"
                             />
                         </div>
-                        <Button type="submit">Create Task</Button>
+                        {!editingTask && (
+                            <div>
+                                <Label htmlFor="priority">Priority</Label>
+                                <Controller
+                                    name="priority"
+                                    control={control}
+                                    render={({ field }) => (
+                                        <Select
+                                            onValueChange={field.onChange}
+                                            defaultValue={field.value}
+                                        >
+                                            <SelectTrigger className="bg-background text-foreground">
+                                                <SelectValue placeholder="Select priority" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="low">
+                                                    Low
+                                                </SelectItem>
+                                                <SelectItem value="medium">
+                                                    Medium
+                                                </SelectItem>
+                                                <SelectItem value="high">
+                                                    High
+                                                </SelectItem>
+                                            </SelectContent>
+                                        </Select>
+                                    )}
+                                />
+                                {errors.priority && (
+                                    <p className="text-sm text-destructive">
+                                        {errors.priority.message}
+                                    </p>
+                                )}
+                            </div>
+                        )}
+                        <Button type="submit">
+                            {editingTask ? "Update" : "Create"} Task
+                        </Button>
                     </form>
                 </DialogContent>
             </Dialog>

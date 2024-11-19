@@ -1,4 +1,5 @@
 import axios from "../config/axios";
+import { TaskFormData } from "../types";
 
 export const loginUser = async (data: { email: string; password: string }) => {
     try {
@@ -66,6 +67,75 @@ export const getUserAnalytics = async () => {
 export const getMyTransactions = async () => {
     try {
         const response = await axios.get("/transactions/me");
+        return response;
+    } catch (error: any) {
+        throw new Error(error.message);
+    }
+};
+
+export const createTask = async (data: TaskFormData) => {
+    try {
+        const response = await axios.post("/task/add", data);
+        return response.data.task;
+    } catch (error: any) {
+        throw new Error(error.message);
+    }
+};
+
+export const getAllTasks = async () => {
+    try {
+        const response = await axios.get("/task/all");
+        return response.data;
+    } catch (error: any) {
+        throw new Error(error.message);
+    }
+};
+
+export const getTask = async (id: number | undefined) => {
+    try {
+        const response = await axios.get("/task/" + id);
+        return response;
+    } catch (error: any) {
+        throw new Error(error.message);
+    }
+};
+
+export const updateTaskData = async (id: any, data: Partial<TaskFormData>) => {
+    try {
+        const response = await axios.put("/task/" + id, data);
+        return response.data.task;
+    } catch (error: any) {
+        throw new Error(error.message);
+    }
+};
+
+export const updateTaskStatus = async (
+    id: any,
+    data: Partial<TaskFormData>
+) => {
+    try {
+        const response = await axios.patch("/task/" + id + "/status", data);
+        return response.data.task;
+    } catch (error: any) {
+        throw new Error(error.message);
+    }
+};
+
+export const updateTaskPriority = async (
+    id: any,
+    data: Partial<TaskFormData>
+) => {
+    try {
+        const response = await axios.patch("/task/" + id + "/priority", data);
+        return response.data.task;
+    } catch (error: any) {
+        throw new Error(error.message);
+    }
+};
+
+export const deleteTask = async (id: number | undefined) => {
+    try {
+        const response = await axios.delete("/task/" + id);
         return response;
     } catch (error: any) {
         throw new Error(error.message);
