@@ -30,7 +30,7 @@ export const userDetails = async () => {
 
 export const uploadAvatarForUser = async (data: any) => {
     try {
-        const response = await axios.post("/user/upload", data);
+        const response = await axios.post("/user/avatar", data);
         return response;
     } catch (error: any) {
         throw new Error(error.message);
@@ -39,7 +39,7 @@ export const uploadAvatarForUser = async (data: any) => {
 
 export const updateUser = async (data: any) => {
     try {
-        const response = await axios.post("/user/update", data);
+        const response = await axios.put("/user/me", data);
         return response;
     } catch (error: any) {
         throw new Error(error.message);
@@ -49,6 +49,15 @@ export const updateUser = async (data: any) => {
 export const updateUserPassword = async (data: any) => {
     try {
         const response = await axios.post("/user/update-password", data);
+        return response;
+    } catch (error: any) {
+        throw new Error(error.message);
+    }
+};
+
+export const updateUserWallet = async (data: any) => {
+    try {
+        const response = await axios.post("/user/update-wallet", data);
         return response;
     } catch (error: any) {
         throw new Error(error.message);

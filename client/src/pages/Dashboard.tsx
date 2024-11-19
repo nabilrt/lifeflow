@@ -369,6 +369,7 @@ const Dashboard = () => {
                                                 dateA.getTime()
                                             ); // Explicitly use getTime()
                                         })
+                                        .slice(0, 8)
                                         .map((item) => {
                                             return (
                                                 <TableRow key={item.id}>

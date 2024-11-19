@@ -8,6 +8,7 @@ import NotFoundPage from "./pages/NotFoundPage";
 import { ThemeProvider } from "./lib/context/theme-context";
 import Settings from "./pages/Settings";
 import { Toaster } from "./components/ui/toaster";
+import ProfilePage from "./pages/Profile";
 
 function App() {
     return (
@@ -20,6 +21,7 @@ function App() {
                         <Route path="/user/*" element={<PrivateOutlet />}>
                             <Route path="dashboard" element={<Dashboard />} />
                             <Route path="settings" element={<Settings />} />
+                            <Route path="profile" element={<ProfilePage />} />
                             <Route path="*" element={<NotFoundPage />} />
                         </Route>
                         <Route path="*" element={<NotFoundPage />} />

@@ -24,8 +24,9 @@ import {
 import { Input } from "@/components/ui/input";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
-import { updateUserPassword } from "@/lib/api";
+import { updateUserPassword, updateUserWallet, userDetails } from "@/lib/api";
 import { CircleAlertIcon, CircleCheck } from "lucide-react";
+import { useAuth } from "@/lib/context/auth-context";
 
 const passwordSchema = z
     .object({
@@ -42,9 +43,18 @@ const passwordSchema = z
 type PasswordFormValues = z.infer<typeof passwordSchema>;
 export default function Settings() {
     const { theme, setTheme } = useTheme();
+    const { user, setUser } = useAuth();
+    const [walletBalance, setWalletBalance] = useState<number | undefined>(
+        user?.walletBalance || 0
+    );
     const [isLoading, setIsLoading] = useState(false);
     const [apiLoading, setAPILoading] = useState(false);
     const [alert, setAlert] = useState<{
+        type: "success" | "error";
+        message: string;
+    } | null>(null);
+    const [apiLoadingV2, setAPILoadingV2] = useState(false);
+    const [alertV2, setAlertV2] = useState<{
         type: "success" | "error";
         message: string;
     } | null>(null);
@@ -63,6 +73,7 @@ export default function Settings() {
             const response = await updateUserPassword({
                 newPassword: data.newPassword,
             });
+
             setAlert({ type: "success", message: response.data.message });
             form.reset();
         } catch (error: any) {
@@ -83,6 +94,29 @@ export default function Settings() {
                 setTheme(newTheme);
                 setIsLoading(false);
             }, 300);
+        }
+    };
+
+    const updateWalletBalance = async () => {
+        try {
+            setAPILoadingV2(true);
+            const response = await updateUserWallet({
+                newBalance: walletBalance,
+            });
+            const userData = await userDetails();
+            setUser(userData.data);
+            localStorage.setItem("user", JSON.stringify(userData.data));
+
+            setAlertV2({ type: "success", message: response.data.message });
+            form.reset();
+        } catch (error: any) {
+            setAlert({ type: "error", message: error.message });
+            form.reset();
+        } finally {
+            setAPILoadingV2(false);
+            setTimeout(() => {
+                setAlertV2(null);
+            }, 2000);
         }
     };
 
@@ -121,6 +155,30 @@ export default function Settings() {
                                 </AlertTitle>
                                 <AlertDescription>
                                     {alert.message}
+                                </AlertDescription>
+                            </Alert>
+                        )}
+                        {alertV2 && (
+                            <Alert
+                                variant={
+                                    alertV2.type === "success"
+                                        ? "default"
+                                        : "destructive"
+                                }
+                                className="mb-4"
+                            >
+                                {alertV2.type === "success" ? (
+                                    <CircleAlertIcon className="h-4 w-4" />
+                                ) : (
+                                    <CircleCheck className="h-4 w-4" />
+                                )}
+                                <AlertTitle>
+                                    {alertV2.type === "success"
+                                        ? "Success"
+                                        : "Error"}
+                                </AlertTitle>
+                                <AlertDescription>
+                                    {alertV2.message}
                                 </AlertDescription>
                             </Alert>
                         )}
@@ -172,6 +230,27 @@ export default function Settings() {
                             </form>
                         </FormProvider>
                     </div>
+                    <div>
+                        <h3 className="text-lg font-medium mb-2">
+                            Update Wallet Balance
+                        </h3>
+
+                        <Input
+                            type="text"
+                            value={walletBalance}
+                            onChange={(e) =>
+                                setWalletBalance(Number(e.target.value))
+                            }
+                        />
+                        <Button
+                            onClick={updateWalletBalance}
+                            className="mt-2"
+                            disabled={apiLoadingV2}
+                        >
+                            {apiLoading ? "Updating..." : "Update"}
+                        </Button>
+                    </div>
+
                     <div>
                         <h3 className="text-lg font-medium mb-2">Theme</h3>
                         <div className="grid grid-cols-2 gap-4">

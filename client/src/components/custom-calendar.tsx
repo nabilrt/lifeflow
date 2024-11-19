@@ -300,7 +300,9 @@ export default function CustomCalendar({ setIsUpdated, isUpdated }: any) {
                                             </TooltipTrigger>
                                             {tasksForDay && (
                                                 <TooltipContent>
-                                                    <ul className="list-disc pl-4">
+                                                    <ul
+                                                        className={`list-disc pl-4`}
+                                                    >
                                                         {tasksForDay.map(
                                                             (task) => (
                                                                 <li
@@ -308,11 +310,35 @@ export default function CustomCalendar({ setIsUpdated, isUpdated }: any) {
                                                                         task.id
                                                                     }
                                                                 >
-                                                                    {task.name}{" "}
-                                                                    -{" "}
-                                                                    {
-                                                                        task.priority
-                                                                    }
+                                                                    <span
+                                                                        className={`${
+                                                                            task.isCompleted
+                                                                                ? "line-through"
+                                                                                : ""
+                                                                        }`}
+                                                                    >
+                                                                        {
+                                                                            task.name
+                                                                        }{" "}
+                                                                    </span>
+                                                                    <span
+                                                                        className={`${
+                                                                            task.isCompleted
+                                                                                ? "line-through"
+                                                                                : ""
+                                                                        }`}
+                                                                    >
+                                                                        -{" "}
+                                                                    </span>
+                                                                    <span
+                                                                        className={`${
+                                                                            task.isCompleted
+                                                                                ? "line-through"
+                                                                                : ""
+                                                                        }`}
+                                                                    >
+                                                                        {task.priority.toLocaleUpperCase()}
+                                                                    </span>
                                                                 </li>
                                                             )
                                                         )}
@@ -349,10 +375,27 @@ export default function CustomCalendar({ setIsUpdated, isUpdated }: any) {
                                                     checked as boolean
                                                 )
                                             }
+                                            disabled={task.isCompleted}
                                         />
                                     </TableCell>
-                                    <TableCell>{task.name}</TableCell>
-                                    <TableCell>{task.description}</TableCell>
+                                    <TableCell
+                                        className={`${
+                                            task.isCompleted
+                                                ? "line-through"
+                                                : ""
+                                        }`}
+                                    >
+                                        {task.name}
+                                    </TableCell>
+                                    <TableCell
+                                        className={`${
+                                            task.isCompleted
+                                                ? "line-through"
+                                                : ""
+                                        }`}
+                                    >
+                                        {task.description}
+                                    </TableCell>
                                     <TableCell>
                                         <Select
                                             value={task.priority}
@@ -364,6 +407,7 @@ export default function CustomCalendar({ setIsUpdated, isUpdated }: any) {
                                                     value
                                                 )
                                             }
+                                            disabled={task.isCompleted}
                                         >
                                             <SelectTrigger className="w-[100px]">
                                                 <SelectValue placeholder="Select priority" />
@@ -388,6 +432,7 @@ export default function CustomCalendar({ setIsUpdated, isUpdated }: any) {
                                                 onClick={() =>
                                                     handleEditTask(task)
                                                 }
+                                                disabled={task.isCompleted}
                                             >
                                                 Edit
                                             </Button>

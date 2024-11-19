@@ -26,7 +26,6 @@ instance.interceptors.response.use(
     },
     (error) => {
         if (error.response) {
-
             // Check for specific status codes and handle them
             if (error.response.status === 401) {
                 localStorage.removeItem("token");
@@ -34,19 +33,16 @@ instance.interceptors.response.use(
                 window.location.href = "/";
             }
 
-            // Attach the API error message if available
             const apiErrorMessage =
                 error.response.data?.error || error.response.data?.message;
             error.message = apiErrorMessage || error.message;
         } else if (error.request) {
-            // Request was made but no response received
             error.message = "No response received from the server.";
         } else {
-            // Something happened in setting up the request
             error.message = error.message || "An unexpected error occurred.";
         }
 
-        return Promise.reject(error); // Pass the enhanced error object
+        return Promise.reject(error);
     }
 );
 
