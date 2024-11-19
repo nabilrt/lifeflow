@@ -62,8 +62,6 @@ const updateTour = async (req, res) => {
             images: attachments, // Include uploaded images in the update payload
         };
 
-        console.log(tourData);
-
         const tour = await tourService.updateTour(id, tourData, userId);
         res.status(200).json({
             message: "Tour updated successfully",

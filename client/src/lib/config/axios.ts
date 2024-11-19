@@ -22,13 +22,10 @@ instance.interceptors.request.use(
 // Response interceptor
 instance.interceptors.response.use(
     (response) => {
-        console.log("Response Status Code:", response.status);
-
         return response;
     },
     (error) => {
         if (error.response) {
-            console.error("Error Status Code:", error.response.status);
 
             // Check for specific status codes and handle them
             if (error.response.status === 401) {

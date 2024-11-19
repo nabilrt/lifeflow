@@ -23,15 +23,15 @@ const analyticsService = async (userId) => {
     const [incomeExpense] = await Transaction.sequelize.query(
         `
         SELECT
-            SUM(CASE WHEN type = 'credit' THEN amount ELSE 0 END) AS total_income,
+            SUM(CASE WHEN type = 'credit' AND categoryId NOT IN (
+                SELECT id FROM categories WHERE name = 'Revert Transaction' AND userId = :userId
+            ) THEN amount ELSE 0 END) AS total_income,
             SUM(CASE WHEN type = 'debit' THEN amount ELSE 0 END) AS total_expense
         FROM transactions
         WHERE userId = :userId
     `,
         { replacements: { userId } }
     );
-
-    console.log(incomeExpense);
 
     // Total Income and Expense
     const totalIncome = incomeExpense[0].total_income || 0;

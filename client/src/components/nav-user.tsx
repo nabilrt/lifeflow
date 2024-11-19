@@ -58,7 +58,8 @@ export function NavUser() {
                                     {userData?.name}
                                 </span>
                                 <span className="truncate text-xs">
-                                    {userData?.email}
+                                    Balance:{" "}
+                                    {userData?.walletBalance.toFixed(2)}
                                 </span>
                             </div>
                             <ChevronsUpDown className="ml-auto size-4" />
@@ -86,7 +87,8 @@ export function NavUser() {
                                         {userData?.name}
                                     </span>
                                     <span className="truncate text-xs">
-                                        {userData?.email}
+                                        Balance:{" "}
+                                        {userData?.walletBalance.toFixed(2)}
                                     </span>
                                 </div>
                             </div>

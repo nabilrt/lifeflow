@@ -66,7 +66,6 @@ export default function Settings() {
             setAlert({ type: "success", message: response.data.message });
             form.reset();
         } catch (error: any) {
-            console.log(error);
             setAlert({ type: "error", message: error.message });
             form.reset();
         } finally {

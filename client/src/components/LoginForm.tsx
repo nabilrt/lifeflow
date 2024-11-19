@@ -51,7 +51,7 @@ export default function LoginForm() {
     }
 
     if (authenticated) {
-        navigate("/user/dasboard");
+        navigate("/user/dashboard");
     }
     return (
         <Card className="mx-auto max-w-sm">

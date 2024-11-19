@@ -6,7 +6,6 @@ const { User, Category, Transaction } = require("../models/index");
 require("dotenv").config();
 
 const createUser = async ({ name, email, password, file }) => {
-    console.log(name, email, password, file);
     if (!name || !email || !password) {
         throw new Error("Fill up all the fields");
     }
