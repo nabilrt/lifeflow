@@ -9,28 +9,30 @@ import { ThemeProvider } from "./lib/context/theme-context";
 import Settings from "./pages/Settings";
 import { Toaster } from "./components/ui/toaster";
 import ProfilePage from "./pages/Profile";
+import TransactionsComponent from "./pages/Transaction";
 
 function App() {
-    return (
-        <>
-            <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
-                <AuthContextProvider>
-                    <Routes>
-                        <Route path="/" element={<Login />} />
-                        <Route path="/register" element={<Register />} />
-                        <Route path="/user/*" element={<PrivateOutlet />}>
-                            <Route path="dashboard" element={<Dashboard />} />
-                            <Route path="settings" element={<Settings />} />
-                            <Route path="profile" element={<ProfilePage />} />
-                            <Route path="*" element={<NotFoundPage />} />
-                        </Route>
-                        <Route path="*" element={<NotFoundPage />} />
-                    </Routes>
-                </AuthContextProvider>
-            </ThemeProvider>
-            <Toaster />
-        </>
-    );
+  return (
+    <>
+      <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
+        <AuthContextProvider>
+          <Routes>
+            <Route path="/" element={<Login />} />
+            <Route path="/register" element={<Register />} />
+            <Route path="/user/*" element={<PrivateOutlet />}>
+              <Route path="dashboard" element={<Dashboard />} />
+              <Route path="settings" element={<Settings />} />
+              <Route path="profile" element={<ProfilePage />} />
+              <Route path="finance" element={<TransactionsComponent />} />
+              <Route path="*" element={<NotFoundPage />} />
+            </Route>
+            <Route path="*" element={<NotFoundPage />} />
+          </Routes>
+        </AuthContextProvider>
+      </ThemeProvider>
+      <Toaster />
+    </>
+  );
 }
 
 export default App;
